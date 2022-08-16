@@ -19,7 +19,7 @@ playConnect4 myboard
     move <- getMove $ whoseTurn myboard
     let f = changeBoardState myboard 
         mynew_board = f $ makeMove myboard move
-    putStrLn ("\n" ++ liftA2 (++) showBoard showTrailer mynew_board) -- liftA2 to distribute 1 argument to two functions
+    putStrLn ("\n" ++ liftA2 (++) showBoard showTrailer mynew_board) 
     playConnect4 mynew_board
  
 getMove :: Player -> IO Int
