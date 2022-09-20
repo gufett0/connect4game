@@ -5,3 +5,5 @@ This terminal game is designed for two users to play against each other.
 
 To be compiled with:
 *cabal-install version 3.6.2.0*
+
+Navigate to your project folder and use the command cabal run
