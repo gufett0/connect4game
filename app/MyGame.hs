@@ -1,9 +1,10 @@
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module MyGame where
-import Data.List ( sortBy )
+import Data.List
 import Data.Ord ()
 import Data.Function (on)
 import Data
+import Data.List.ZigZag ( diagonals)
 
 
 initialBoardState :: Row -> Col -> BoardState
@@ -27,7 +28,8 @@ makeMove bs c = Slot (rPos whichRow) c (Player $ whoseTurn bs)
     where 
         checkCol e   = cPos e == c && slotState e == Empty
         whichRow     = last $ filter checkCol bs
-         
+
+-- MY CHECKER FUNCTIONS:
 whoseTurn :: BoardState -> Player
 whoseTurn bs
  | red_count > yellow_count = Yellow
@@ -45,6 +47,13 @@ anyRowWins :: BoardState -> Bool
 anyRowWins bs = 
     let x = checkGameState  (mySliding 4 $ slotState <$> bs) (mySliding 4 $ rPos <$> bs)
  in x /= Running && x /= Draw
+
+anyDiagWins :: BoardState -> Bool 
+anyDiagWins bs = 
+    let diags = concat $ myReplace . snd $ diagSort bs
+        states = concat . fst $ diagSort bs
+        x = checkGameState  (mySliding 4 $ states) (mySliding 4 $ diags)
+ in x /= Running && x /= Draw       
 
 earlyTie :: BoardState -> Bool
 earlyTie bs =
@@ -66,26 +75,8 @@ checkGameState lst@(s:ss) (p:ps) =
     elem (Player Yellow) four ) entire =              Draw  -- if all of them contain at least a Y and a R
   | otherwise =                                       Running
 
-isConsecutive :: Eq a => [a] -> Bool
-isConsecutive (x:xs) = all (==x) xs
-isConsecutive [] = undefined 
 
-columnSort :: BoardState -> ([SlotState], [Int])
-columnSort bs = unzip . mySort $ zip (slotState <$> bs) (cPos <$> bs)
-    where 
-        mySort :: Ord b => [(a, b)] -> [(a, b)]
-        mySort = sortBy (compare `on` snd) -- Sort by secnd element
-
-mySliding :: Int -> [a] -> [[a]]
-mySliding window [] = []
-mySliding window ls@(x:xs) = 
-    if length ls >= window 
-    then take window ls : mySliding window xs 
-    else mySliding window xs
-
-makeTuple :: BoardState -> [(Col, SlotState)]
-makeTuple bs = zip (dif (cPos <$> bs) ++ [1]) (slotState <$> bs)
-    where dif l = zipWith (-) l (tail l)
+-- MY DRAWING FUNCTIONS:
 
 showBoard :: BoardState -> String
 showBoard bs = 
@@ -113,5 +104,50 @@ showTrailer bs = let n = checkNumCol $ makeTuple bs
         then fst x + 1 
         else checkNumCol xs
     checkNumCol [] = 0  
+
+
+-- MY HELPER FUNCTIONS:
+
+isConsecutive :: Eq a => [a] -> Bool
+isConsecutive (x:xs) = all (==x) xs
+isConsecutive [] = undefined 
+
+mySliding :: Int -> [a] -> [[a]]
+mySliding window [] = []
+mySliding window ls@(x:xs) = 
+    if length ls >= window 
+    then take window ls : mySliding window xs 
+    else mySliding window xs
+
+columnSort :: BoardState -> ([SlotState], [Int])
+columnSort bs = unzip . mySort $ zip (slotState <$> bs) (cPos <$> bs)
+    where 
+        mySort :: Ord b => [(a, b)] -> [(a, b)]
+        mySort = sortBy (compare `on` snd) -- Sort by secnd element
+
+makeTuple :: BoardState -> [(Col, SlotState)]
+makeTuple bs = zip (dif (cPos <$> bs) ++ [1]) (slotState <$> bs)
+    where dif l = zipWith (-) l (tail l)
+
+diagSort :: BoardState -> ([[SlotState]], [[Int]]) -- get all diagonals longer than 3 elements
+diagSort bs = 
+    let cols = (cPos <$> bs)
+        states = (slotState <$> bs)
+        in
+     ( filter (\x -> length x > 3) $ 
+        (diagonals $ mySplit (maximum cols) states) ++ (diagonals $ reverse $ mySplit (maximum cols) states),
+
+      filter (\x -> length x > 3) $ 
+        (diagonals $ mySplit (maximum cols) cols) ++ ( diagonals $ reverse $ mySplit (maximum cols) cols) )
+   
+    where mySplit :: Int -> [a] -> [[a]]
+          mySplit _ [] = []
+          mySplit n xs = take n xs:(mySplit n $ drop n xs) 
+
+myReplace :: [[b]] -> [[Int]]
+myReplace (x:xs) = replicate (length x) (length xs) : myReplace xs
+myReplace [] = []   
+
+
 
 
